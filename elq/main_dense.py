@@ -36,7 +36,6 @@ from tqdm import tqdm
 import pdb
 import time
 
-
 HIGHLIGHTS = [
     "on_red",
     "on_green",
@@ -47,7 +46,10 @@ HIGHLIGHTS = [
 ]
 
 from transformers import BertTokenizer
-tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+
+# tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+tokenizer = BertTokenizer.from_pretrained("dbmdz/bert-base-italian-cased")
+
 
 def _print_colorful_text(input_tokens, tokenizer, pred_triples):
     """
@@ -59,20 +61,20 @@ def _print_colorful_text(input_tokens, tokenizer, pred_triples):
     init()  # colorful output
     msg = ""
     if pred_triples and (len(pred_triples) > 0):
-        msg += tokenizer.decode(input_tokens[0 : int(pred_triples[sort_idxs[0]][1])])
+        msg += tokenizer.decode(input_tokens[0: int(pred_triples[sort_idxs[0]][1])])
         for i, idx in enumerate(sort_idxs):
             triple = pred_triples[idx]
             msg += " " + colored(
-                tokenizer.decode(input_tokens[int(triple[1]) : int(triple[2])]),
+                tokenizer.decode(input_tokens[int(triple[1]): int(triple[2])]),
                 "grey",
                 HIGHLIGHTS[idx % len(HIGHLIGHTS)],
             )
             if i < len(sort_idxs) - 1:
                 msg += " " + tokenizer.decode(input_tokens[
-                    int(triple[2]) : int(pred_triples[sort_idxs[i + 1]][1])
-                ])
+                                              int(triple[2]): int(pred_triples[sort_idxs[i + 1]][1])
+                                              ])
             else:
-                msg += " " + tokenizer.decode(input_tokens[int(triple[2]) : ])
+                msg += " " + tokenizer.decode(input_tokens[int(triple[2]):])
     else:
         msg = tokenizer.decode(input_tokens)
     print("\n" + str(msg) + "\n")
@@ -91,9 +93,9 @@ def _print_colorful_prediction(all_entity_preds, pred_triples, id2text, id2wikid
 
 
 def _load_candidates(
-    entity_catalogue, entity_encoding,
-    faiss_index="none", index_path=None,
-    logger=None,
+        entity_catalogue, entity_encoding,
+        faiss_index="none", index_path=None,
+        logger=None,
 ):
     if faiss_index == "none":
         candidate_encoding = torch.load(entity_encoding)
@@ -139,13 +141,13 @@ def _load_candidates(
         id2wikidata = json.load(open("models/id2wikidata.json"))
 
     return (
-        candidate_encoding, indexer, 
+        candidate_encoding, indexer,
         id2title, id2text, id2wikidata,
     )
 
 
 def _get_test_samples(
-    test_filename, test_entities_path, logger,
+        test_filename, test_entities_path, logger,
 ):
     """
     Parses jsonl format with one example per line
@@ -230,9 +232,11 @@ def _process_biencoder_dataloader(samples, tokenizer, biencoder_params, logger):
         for sample in samples:
             samples_text_tuple
             # truncate the end if the sequence is too long...
-            encoded_sample = [101] + tokenizer.encode(sample['text'])[:biencoder_params["max_context_length"]-2] + [102]
+            encoded_sample = [101] + tokenizer.encode(sample['text'])[:biencoder_params["max_context_length"] - 2] + [
+                102]
             max_seq_len = max(len(encoded_sample), max_seq_len)
-            samples_text_tuple.append(encoded_sample + [0 for _ in range(biencoder_params["max_context_length"] - len(encoded_sample))])
+            samples_text_tuple.append(
+                encoded_sample + [0 for _ in range(biencoder_params["max_context_length"] - len(encoded_sample))])
 
             # print(samples_text_tuple)
 
@@ -246,10 +250,10 @@ def _process_biencoder_dataloader(samples, tokenizer, biencoder_params, logger):
 
 
 def _run_biencoder(
-    args, biencoder, dataloader, candidate_encoding, samples,
-    num_cand_mentions=50, num_cand_entities=10,
-    device="cpu", sample_to_all_context_inputs=None,
-    threshold=0.0, indexer=None,
+        args, biencoder, dataloader, candidate_encoding, samples,
+        num_cand_mentions=50, num_cand_entities=10,
+        device="cpu", sample_to_all_context_inputs=None,
+        threshold=0.0, indexer=None,
 ):
     """
     Returns: tuple
@@ -300,11 +304,12 @@ def _run_biencoder(
                         cand_encs=candidate_encoding.to(device),
                     )
                     # DIM (all_pred_mentions_batch, num_cand_entities); (all_pred_mentions_batch, num_cand_entities)
-                    top_cand_logits_shape, top_cand_indices_shape = cand_logits.topk(num_cand_entities, dim=-1, sorted=True)
+                    top_cand_logits_shape, top_cand_indices_shape = cand_logits.topk(num_cand_entities, dim=-1,
+                                                                                     sorted=True)
                 except:
                     # for memory savings, go through one chunk of candidates at a time
-                    SPLIT_SIZE=1000000
-                    done=False
+                    SPLIT_SIZE = 1000000
+                    done = False
                     while not done:
                         top_cand_logits_list = []
                         top_cand_indices_list = []
@@ -312,14 +317,16 @@ def _run_biencoder(
                         for chunk_idx in range(max_chunk):
                             try:
                                 # DIM (num_total_mentions, num_cand_entities); (num_total_mention, num_cand_entities)
-                                top_cand_logits, top_cand_indices = embedding_ctxt.mm(candidate_encoding[chunk_idx*SPLIT_SIZE:(chunk_idx+1)*SPLIT_SIZE].to(device).t().contiguous()).topk(10, dim=-1, sorted=True)
+                                top_cand_logits, top_cand_indices = embedding_ctxt.mm(
+                                    candidate_encoding[chunk_idx * SPLIT_SIZE:(chunk_idx + 1) * SPLIT_SIZE].to(
+                                        device).t().contiguous()).topk(10, dim=-1, sorted=True)
                                 top_cand_logits_list.append(top_cand_logits)
-                                top_cand_indices_list.append(top_cand_indices + chunk_idx*SPLIT_SIZE)
+                                top_cand_indices_list.append(top_cand_indices + chunk_idx * SPLIT_SIZE)
                                 if len((top_cand_indices_list[chunk_idx] < 0).nonzero()) > 0:
                                     import pdb
                                     pdb.set_trace()
                             except:
-                                SPLIT_SIZE = int(SPLIT_SIZE/2)
+                                SPLIT_SIZE = int(SPLIT_SIZE / 2)
                                 break
                         if len(top_cand_indices_list) == max_chunk:
                             # DIM (num_total_mentions, num_cand_entities); (num_total_mentions, num_cand_entities) -->
@@ -334,15 +341,18 @@ def _run_biencoder(
                             done = True
             else:
                 # DIM (all_pred_mentions_batch, num_cand_entities); (all_pred_mentions_batch, num_cand_entities)
-                top_cand_logits_shape, top_cand_indices_shape = indexer.search_knn(embedding_ctxt.cpu().numpy(), num_cand_entities)
+                top_cand_logits_shape, top_cand_indices_shape = indexer.search_knn(embedding_ctxt.cpu().numpy(),
+                                                                                   num_cand_entities)
                 top_cand_logits_shape = torch.tensor(top_cand_logits_shape).to(embedding_ctxt.device)
                 top_cand_indices_shape = torch.tensor(top_cand_indices_shape).to(embedding_ctxt.device)
 
             # DIM (bs, max_num_pred_mentions, num_cand_entities)
-            top_cand_logits = torch.zeros(chosen_mention_logits.size(0), chosen_mention_logits.size(1), top_cand_logits_shape.size(-1)).to(
+            top_cand_logits = torch.zeros(chosen_mention_logits.size(0), chosen_mention_logits.size(1),
+                                          top_cand_logits_shape.size(-1)).to(
                 top_cand_logits_shape.device, top_cand_logits_shape.dtype)
             top_cand_logits[left_align_mask] = top_cand_logits_shape
-            top_cand_indices = torch.zeros(chosen_mention_logits.size(0), chosen_mention_logits.size(1), top_cand_indices_shape.size(-1)).to(
+            top_cand_indices = torch.zeros(chosen_mention_logits.size(0), chosen_mention_logits.size(1),
+                                           top_cand_indices_shape.size(-1)).to(
                 top_cand_indices_shape.device, top_cand_indices_shape.dtype)
             top_cand_indices[left_align_mask] = top_cand_indices_shape
 
@@ -357,7 +367,7 @@ def _run_biencoder(
             '''
             DON'T NEED TO RESORT BY NEW SCORE -- DISTANCE PRESERVING (largest entity score still be largest entity score)
             '''
-    
+
             for idx in range(len(batch[0])):
                 # [(seqlen) x exs] <= (bsz, seqlen)
                 context_inputs.append(context_input[idx][mask_ctxt[idx]].data.cpu().numpy())
@@ -376,8 +386,8 @@ def _run_biencoder(
 
 
 def get_predictions(
-    args, dataloader, biencoder_params, samples, nns, dists, mention_scores, cand_scores,
-    pred_mention_bounds, id2title, threshold=-2.9, mention_threshold=-0.6931,
+        args, dataloader, biencoder_params, samples, nns, dists, mention_scores, cand_scores,
+        pred_mention_bounds, id2title, threshold=-2.9, mention_threshold=-0.6931,
 ):
     """
     Arguments:
@@ -420,7 +430,7 @@ def get_predictions(
 
             # (num_pred_mentions, cands_per_mention)
             scores = dists[i] if args.threshold_type == "joint" else cand_scores[i]
-            cands_mask = (scores[:,0] == scores[:,0])
+            cands_mask = (scores[:, 0] == scores[:, 0])
             pred_entity_list = nns[i][cands_mask]
             if len(pred_entity_list) > 0:
                 e_id = pred_entity_list[0]
@@ -432,17 +442,17 @@ def get_predictions(
             if args.threshold_type == "joint":
                 # THRESHOLDING
                 assert utterance is not None
-                top_mentions_mask = (distances[:,0] > threshold)
+                top_mentions_mask = (distances[:, 0] > threshold)
             elif args.threshold_type == "top_entity_by_mention":
                 top_mentions_mask = (mention_scores[i] > mention_threshold)
             elif args.threshold_type == "thresholded_entity_by_mention":
-                top_mentions_mask = (distances[:,0] > threshold) & (mention_scores[i] > mention_threshold)
-    
-            _, sort_idxs = torch.tensor(distances[:,0][top_mentions_mask]).sort(descending=True)
+                top_mentions_mask = (distances[:, 0] > threshold) & (mention_scores[i] > mention_threshold)
+
+            _, sort_idxs = torch.tensor(distances[:, 0][top_mentions_mask]).sort(descending=True)
             # cands already sorted by score
-            all_pred_entities = pred_entity_list[:,0][top_mentions_mask]
+            all_pred_entities = pred_entity_list[:, 0][top_mentions_mask]
             e_mention_bounds = entity_mention_bounds_idx[top_mentions_mask]
-            chosen_distances = distances[:,0][top_mentions_mask]
+            chosen_distances = distances[:, 0][top_mentions_mask]
             if len(all_pred_entities) >= 2:
                 all_pred_entities = all_pred_entities[sort_idxs]
                 e_mention_bounds = e_mention_bounds[sort_idxs]
@@ -484,7 +494,9 @@ def get_predictions(
                 input_label_ids = batch_label_ids[b][batch_label_ids[b] != -1].tolist()
                 assert len(input_label_ids) == len(input_mention_idxs)
                 gold_mention_bounds = [
-                    sample['text'][ment[0]-10:ment[0]] + "[" + sample['text'][ment[0]:ment[1]] + "]" + sample['text'][ment[1]:ment[1]+10]
+                    sample['text'][ment[0] - 10:ment[0]] + "[" + sample['text'][ment[0]:ment[1]] + "]" + sample['text'][
+                                                                                                         ment[1]:ment[
+                                                                                                                     1] + 10]
                     for ment in sample['mentions']
                 ]
 
@@ -493,8 +505,8 @@ def get_predictions(
                 # return first instance of my_input in gold_input
                 for my_input_start in range(len(gold_input)):
                     if (
-                        gold_input[my_input_start] == input_context[0] and
-                        gold_input[my_input_start:my_input_start+len(input_context)] == input_context
+                            gold_input[my_input_start] == input_context[0] and
+                            gold_input[my_input_start:my_input_start + len(input_context)] == input_context
                     ):
                         break
 
@@ -522,7 +534,8 @@ def get_predictions(
                     str(input_label_ids[j]),
                     input_mention_idxs[j][0], input_mention_idxs[j][1] + 1,
                 ) for j in range(len(input_label_ids))]
-                num_overlap_weak_window, num_overlap_strong_window = entity_linking_tp_with_overlap(gold_input_window_triples, pred_input_window_triples)
+                num_overlap_weak_window, num_overlap_strong_window = entity_linking_tp_with_overlap(
+                    gold_input_window_triples, pred_input_window_triples)
                 num_correct_weak_from_input_window += num_overlap_weak_window
                 num_correct_strong_from_input_window += num_overlap_strong_window
                 num_gold_from_input_window += len(input_mention_idxs)
@@ -541,7 +554,8 @@ def get_predictions(
                     "tokens": input_context,
                 })
 
-                if errors_f is not None and (num_overlap_weak != len(gold_triples) or num_overlap_weak != len(pred_triples)):
+                if errors_f is not None and (
+                        num_overlap_weak != len(gold_triples) or num_overlap_weak != len(pred_triples)):
                     errors_f.write(json.dumps(entity_results) + "\n")
             else:
                 entity_results.update({
@@ -558,7 +572,7 @@ def get_predictions(
                 f.write(
                     json.dumps(entity_results) + "\n"
                 )
-    
+
     if f is not None:
         f.close()
         errors_f.close()
@@ -589,7 +603,7 @@ def _load_biencoder_outs(save_preds_dir):
 
 
 def display_metrics(
-    num_correct, num_predicted, num_gold, prefix="",
+        num_correct, num_predicted, num_gold, prefix="",
 ):
     p = 0 if num_predicted == 0 else float(num_correct) / float(num_predicted)
     r = 0 if num_gold == 0 else float(num_correct) / float(num_gold)
@@ -658,18 +672,17 @@ def load_models(args, logger):
 
 
 def run(
-    args,
-    logger,
-    biencoder,
-    biencoder_params,
-    candidate_encoding,
-    indexer,
-    id2title,
-    id2text,
-    id2wikidata,
-    test_data=None,
+        args,
+        logger,
+        biencoder,
+        biencoder_params,
+        candidate_encoding,
+        indexer,
+        id2title,
+        id2text,
+        id2wikidata,
+        test_data=None,
 ):
-
     if not test_data and not getattr(args, 'test_mentions', None) and not getattr(args, 'interactive', None):
         msg = (
             "ERROR: either you start BLINK with the "
@@ -677,7 +690,7 @@ def run(
             "and test entities (--test_entities) or manually pass in test data"
         )
         raise ValueError(msg)
-    
+
     if getattr(args, 'save_preds_dir', None) is not None and not os.path.exists(args.save_preds_dir):
         os.makedirs(args.save_preds_dir)
         print("Saving preds in {}".format(args.save_preds_dir))
@@ -735,7 +748,7 @@ def run(
                             break
                         except:
                             print("Error! Expected float, got {}. Try again.".format(threshold))
-    
+
     else:
         if not test_data:
             samples, num_unk = _get_test_samples(
@@ -770,15 +783,17 @@ def run(
             if logger: logger.info("Finished running biencoder")
 
             runtime = end_time - start_time
-            
+
             if getattr(args, 'save_preds_dir', None):
                 _save_biencoder_outs(
                     args.save_preds_dir, nns, dists, pred_mention_bounds, cand_scores, mention_scores, runtime,
                 )
         else:
-            nns, dists, pred_mention_bounds, cand_scores, mention_scores, runtime = _load_biencoder_outs(args.save_preds_dir)
+            nns, dists, pred_mention_bounds, cand_scores, mention_scores, runtime = _load_biencoder_outs(
+                args.save_preds_dir)
 
-        assert len(samples) == len(nns) == len(dists) == len(pred_mention_bounds) == len(cand_scores) == len(mention_scores)
+        assert len(samples) == len(nns) == len(dists) == len(pred_mention_bounds) == len(cand_scores) == len(
+            mention_scores)
 
         (
             all_entity_preds, num_correct_weak, num_correct_strong, num_predicted, num_gold,
@@ -816,9 +831,10 @@ if __name__ == "__main__":
     )
     # evaluation mode
     parser.add_argument(
-        "--get_predictions", "-p", action="store_true", default=False, help="Getting predictions mode. Does not filter at crossencoder step."
+        "--get_predictions", "-p", action="store_true", default=False,
+        help="Getting predictions mode. Does not filter at crossencoder step."
     )
-    
+
     parser.add_argument(
         "--interactive", "-i", action="store_true", help="Interactive mode."
     )
@@ -839,27 +855,29 @@ if __name__ == "__main__":
         "--mention_threshold", type=str, default=None,
         dest="mention_threshold",
         help="Used if threshold type is `top_entity_by_mention`. "
-        "Threshold for mention score, for which mentions will be pruned if they fall under that threshold. "
-        "Set to '-inf' to get all mentions."
+             "Threshold for mention score, for which mentions will be pruned if they fall under that threshold. "
+             "Set to '-inf' to get all mentions."
     )
     parser.add_argument(
         "--threshold", type=str, default="-4.5",
         dest="threshold",
         help="Threshold for final joint score, for which examples will be pruned if they fall under that threshold. "
-        "Set to `-inf` to get all entities."
+             "Set to `-inf` to get all entities."
     )
     parser.add_argument(
-        "--num_cand_mentions", type=int, default=50, help="Number of mention candidates to consider per example (at most)"
+        "--num_cand_mentions", type=int, default=50,
+        help="Number of mention candidates to consider per example (at most)"
     )
     parser.add_argument(
-        "--num_cand_entities", type=int, default=10, help="Number of entity candidates to consider per mention (at most)"
+        "--num_cand_entities", type=int, default=10,
+        help="Number of entity candidates to consider per mention (at most)"
     )
     parser.add_argument(
         "--threshold_type", type=str, default="joint",
         choices=["joint", "top_entity_by_mention"],
         help="How to threshold the final candidates. "
-        "`top_entity_by_mention`: get top candidate (with entity score) for each predicted mention bound. "
-        "`joint`: by thresholding joint score."
+             "`top_entity_by_mention`: get top candidate (with entity score) for each predicted mention bound. "
+             "`joint`: by thresholding joint score."
     )
 
     # biencoder
@@ -942,7 +960,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--no_logger", dest="no_logger", action="store_true", default=False, help="don't log progress"
     )
-
 
     args = parser.parse_args()
 

@@ -19,13 +19,18 @@ parser.add_argument(
     help="The full path to the wikidata dump for processing",
     required=True,
 )
+
 parser.add_argument(
     "--output", type=str, help="The full path to the output folder", required=True
+)
+parser.add_argument(
+    "--lang", type=str, help="select the language", required=True
 )
 
 args = parser.parse_args()
 
 input_file_path = args.input
+lang = args.lang
 output_file_path = args.output
 
 if not os.path.isfile(input_file_path):
@@ -63,20 +68,20 @@ with bz2.open(input_file_path, "rt") as f:
 
             parsed_obj = {}
 
-            if "en" in json_obj["aliases"]:
+            if lang in json_obj["aliases"]:
                 parsed_obj["aliases"] = [
-                    alias["value"] for alias in json_obj["aliases"]["en"]
+                    alias["value"] for alias in json_obj["aliases"][lang]
                 ]
             else:
                 parsed_obj["aliases"] = None
 
             if "en" in json_obj["labels"]:
-                parsed_obj["wikidata_label"] = json_obj["labels"]["en"]["value"]
+                parsed_obj["wikidata_label"] = json_obj["labels"][lang]["value"]
             else:
                 parsed_obj["wikidata_label"] = None
 
             if "en" in json_obj["descriptions"]:
-                parsed_obj["description"] = json_obj["descriptions"]["en"]["value"]
+                parsed_obj["description"] = json_obj["descriptions"][lang]["value"]
             else:
                 parsed_obj["description"] = None
 

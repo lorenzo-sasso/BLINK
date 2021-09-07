@@ -89,6 +89,12 @@ class BlinkParser(argparse.ArgumentParser):
             type=bool,
             help="Whether the dataset is from zeroshot.",
         )
+        parser.add_argument(
+            "--lang",
+            default="en",
+            type=str,
+            help="language selected in the list: en, it, .. ",
+        )
 
     def add_model_args(self, args=None):
         """
