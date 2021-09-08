@@ -224,7 +224,7 @@ class BiEncoderModule(torch.nn.Module):
         super(BiEncoderModule, self).__init__()
         ctxt_bert = BertModel.from_pretrained(params["bert_model"], output_hidden_states=True)
         if params["load_cand_enc_only"]:
-            bert_model = "bert-large-uncased"
+            bert_model = "dbmdz/bert-base-italian-xxl-uncased"
         else:
             bert_model = params['bert_model']
         cand_bert = BertModel.from_pretrained(

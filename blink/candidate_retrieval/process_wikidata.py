@@ -75,12 +75,12 @@ with bz2.open(input_file_path, "rt") as f:
             else:
                 parsed_obj["aliases"] = None
 
-            if "en" in json_obj["labels"]:
+            if lang in json_obj["labels"]:
                 parsed_obj["wikidata_label"] = json_obj["labels"][lang]["value"]
             else:
                 parsed_obj["wikidata_label"] = None
 
-            if "en" in json_obj["descriptions"]:
+            if lang in json_obj["descriptions"]:
                 parsed_obj["description"] = json_obj["descriptions"][lang]["value"]
             else:
                 parsed_obj["description"] = None

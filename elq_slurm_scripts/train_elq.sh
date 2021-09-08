@@ -22,6 +22,7 @@ base_data=${14}  # if finetune
 base_epoch=${15}  # if finetune
 
 
+
 export PYTHONPATH=.
 
 data_type=${data##*/}
@@ -90,9 +91,14 @@ then
   context_length="128"
 fi
 
-if [ "${model_size}" = "base" ] || [ "${model_size}" = "large" ]
+# if [ "${model_size}" = "base" ] || [ "${model_size}" = "large" ]
+if [ "${model_size}" = "base" ]
 then
-  model_ckpt="bert-${model_size}-uncased"
+  model_ckpt="dbmdz/bert-base-italian-uncased"
+  # model_ckpt="bert-${model_size}-uncased"
+elif [ "${model_size}" = "large" ]
+then
+  model_ckpt="dbmdz/bert-base-italian-xxl-uncased"
 else
   model_ckpt="/checkpoint/belindali/BERT/${model_size}"
 fi

@@ -128,10 +128,9 @@ class ElqParser(argparse.ArgumentParser):
         )
         parser.add_argument(
             "--bert_model",
-            default="bert-base-uncased",
+            default="dbmdz/bert-base-italian-uncased",
             type=str,
-            help="Bert pre-trained model selected in the list: bert-base-uncased, "
-            "bert-large-uncased, bert-base-cased, bert-base-multilingual, bert-base-chinese.",
+            help="Bert pre-trained model for Italian.",
         )
         parser.add_argument(
             "--pull_from_layer", type=int, default=-1, help="Layers to pull from BERT",

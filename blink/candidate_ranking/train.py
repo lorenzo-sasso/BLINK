@@ -301,10 +301,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--bert_model",
-        default="bert-large-cased",
+        default="dbmdz/bert-base-italian-xxl-uncased",
         type=str,
-        help="Bert pre-trained model selected in the list: bert-base-uncased, "
-        "bert-large-uncased, bert-base-cased, bert-base-multilingual, bert-base-chinese.",
+        help="Bert pre-trained model for Italian.",
     )
     parser.add_argument(
         "--model_output_path",

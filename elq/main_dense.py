@@ -953,7 +953,7 @@ if __name__ == "__main__":
         default="output",
         help="Path to the output.",
     )
-
+    
     parser.add_argument(
         "--use_cuda", dest="use_cuda", action="store_true", default=False, help="run on gpu"
     )

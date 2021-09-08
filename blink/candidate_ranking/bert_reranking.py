@@ -82,8 +82,8 @@ class BertForReranking(BertPreTrainedModel):
 
     Examples::
 
-        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-        model = BertForMultipleChoice.from_pretrained('bert-base-uncased')
+        tokenizer = BertTokenizer.from_pretrained('dbmdz/bert-base-italian-uncased')
+        model = BertForMultipleChoice.from_pretrained('dbmdz/bert-base-italian-uncased')
         choices = ["Hello, my dog is cute", "Hello, my cat is amazing"]
         input_ids = torch.tensor([tokenizer.encode(s) for s in choices]).unsqueeze(0)  # Batch size 1, 2 choices
         labels = torch.tensor(1).unsqueeze(0)  # Batch size 1

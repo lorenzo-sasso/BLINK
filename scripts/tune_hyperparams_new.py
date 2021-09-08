@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 from transformers import BertTokenizer
 #tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+
 tokenizer = BertTokenizer.from_pretrained("dbmdz/bert-base-italian-cased")
 
 

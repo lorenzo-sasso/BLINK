@@ -134,7 +134,7 @@ class BlinkParser(argparse.ArgumentParser):
         )
         parser.add_argument(
             "--bert_model",
-            default="bert-base-uncased",
+            default="dbmdz/bert-base-italian-uncased",
             type=str,
             help="Bert pre-trained model selected in the list: bert-base-uncased, "
             "bert-large-uncased, bert-base-cased, bert-base-multilingual, bert-base-chinese.",
